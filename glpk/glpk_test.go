@@ -311,3 +311,42 @@ func TestGarbageCollection(t *testing.T) {
 		lp2.Delete()
 	}
 }
+
+func TestLoadingMplLPs(t *testing.T) {
+	lp := New()
+
+	tran := NewMpl()
+	_ = tran
+
+	returnCode := tran.MplReadModel("../examples/diet.mod", false)
+
+	if returnCode != 0 {
+		t.Error("Error on translating model\n")
+	}
+
+	returnCode = tran.MplGenerate()
+
+	if returnCode != 0 {
+		t.Error("Error on generating model\n")
+	}
+
+	tran.MplBuildProb(lp)
+
+	lp.Simplex(nil)
+
+	if lp.Status() != OPT {
+		t.Errorf("expected an optimal solution:-\n lp.Status == %d expected but got %d", OPT, lp.Status())
+	}
+
+	if lp.PrimStat() != FEAS {
+		t.Errorf("Primal solution expected to be feasable:-\n lp.PrimStat == %d expected but got %d", FEAS, lp.PrimStat())
+	}
+
+	if lp.DualStat() != FEAS {
+		t.Errorf("Dual solution expected to be feasable:-\n lp.PrimStat == %d expected but got %d", FEAS, lp.DualStat())
+	}
+
+	tran.MplFreeWksp()
+	lp.Erase()
+	lp.Delete()
+}

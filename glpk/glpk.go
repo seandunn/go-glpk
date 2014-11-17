@@ -24,7 +24,7 @@
 // along with glpk package. If not, see <http://www.gnu.org/licenses/>.
 
 // Go bindings for GLPK (GNU Linear Programming Kit).
-// 
+//
 // For a usage example see https://github.com/lukpank/go-glpk#example.
 //
 // The binding is not complete but enough for my purposes. Fill free
@@ -688,3 +688,63 @@ func (p *Prob) ColPrim(j int) float64 {
 // TODO:
 // glp_get_col_dual
 // ...
+
+type tran struct {
+	t *C.glp_tran
+}
+
+type Tran struct {
+	t *tran
+}
+
+func finalizeTran(t *tran) {
+	if t.t != nil {
+		C.glp_mpl_free_wksp(t.t)
+		t.t = nil
+	}
+}
+
+func NewMpl() *Tran {
+	t := &tran{C.glp_mpl_alloc_wksp()}
+	runtime.SetFinalizer(t, finalizeTran)
+	return &Tran{t}
+}
+
+func (t *Tran) MplFreeWksp() {
+	if t.t.t != nil {
+		C.glp_mpl_free_wksp(t.t.t)
+		t.t.t = nil
+	}
+}
+
+func (t *Tran) MplReadModel(filename string, skipDataFlag bool) int {
+	f := C.CString(filename)
+
+	skip := C.int(0)
+	if skipDataFlag == true {
+		skip = C.int(1)
+	}
+
+	ret := C.glp_mpl_read_model(t.t.t, f, skip)
+
+	return int(ret)
+}
+
+func (t *Tran) MplGenerate() int {
+
+	ret := C.glp_mpl_generate(t.t.t, nil)
+
+	return int(ret)
+}
+
+func (t *Tran) MplBuildProb(p *Prob) {
+	C.glp_mpl_build_prob(t.t.t, p.p.p)
+}
+
+func (t *Tran) MplReadData(filename string) int {
+	f := C.CString(filename)
+
+	ret := C.glp_mpl_read_data(t.t.t, f)
+
+	return int(ret)
+}
